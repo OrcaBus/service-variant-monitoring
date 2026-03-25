@@ -8,9 +8,10 @@ export const APP_ROOT = path.join(__dirname, '../../app');
 export const EVENT_BUS = EVENT_BUS_NAME; // "OrcaBusMain"
 
 /** Events this service consumes */
-export const INCOMING_EVENT_SOURCE = 'orcabus.workflowmanager';
-export const INCOMING_DETAIL_TYPE = 'WorkflowRunStateChange';
-export const INCOMING_WORKFLOW_NAME = 'hello-world';
+export const INCOMING_EVENT_SOURCE = 'orcabus.icav2wesmanager';
+export const INCOMING_DETAIL_TYPE = 'Icav2WesAnalysisStateChange';
+export const INCOMING_WORKFLOW_NAME = 'dragen-wgts-dna';
+export const INCOMING_STATUS_FILTER = 'SUCCEEDED';
 
 /** Events this service emits */
-export const OUTGOING_EVENT_SOURCE = 'orcabus.helloworld';
+export const OUTGOING_EVENT_SOURCE = 'orcabus.variantmonitoring';

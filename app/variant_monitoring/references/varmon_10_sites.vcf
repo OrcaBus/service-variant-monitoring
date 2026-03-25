@@ -1,0 +1,20 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr5,length=181538259>
+##contig=<ID=chr11,length=135086622>
+##contig=<ID=chr15,length=101991189>
+##contig=<ID=chr16,length=90338345>
+##contig=<ID=chr19,length=58617616>
+##contig=<ID=chr22,length=50818468>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr2	47803699	.	A	T	.	PASS	.
+chr5	112827157	.	T	C	.	PASS	.
+chr11	44130027	.	T	A	.	PASS	.
+chr15	40161296	.	G	A	.	PASS	.
+chr15	40185630	.	G	A	.	PASS	.
+chr15	40199751	.	A	G	.	PASS	.
+chr16	68823538	.	T	C	.	PASS	.
+chr19	10996457	.	T	C	.	PASS	.
+chr19	11058220	.	A	G	.	PASS	.
+chr22	20985799	.	T	C	.	PASS	.

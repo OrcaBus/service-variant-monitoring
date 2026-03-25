@@ -12,7 +12,7 @@ if (!deployMode) {
 }
 
 if (deployMode === 'stateless') {
-  new StatelessStack(app, 'OrcaBusStatelessHelloWorldStack', {
+  new StatelessStack(app, 'OrcaBusStatelessVariantMonitoringStack', {
     env: TOOLCHAIN_ENVIRONMENT,
   });
 } else if (deployMode === 'stateful') {

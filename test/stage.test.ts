@@ -2,17 +2,17 @@ import { App, Aspects, Stack } from 'aws-cdk-lib';
 import { Annotations, Match } from 'aws-cdk-lib/assertions';
 import { SynthesisMessage } from 'aws-cdk-lib/cx-api';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
-import { HelloWorldStack } from '../infrastructure/stage/deployment-stack';
+import { VariantMonitoringStack } from '../infrastructure/stage/deployment-stack';
 import { getStackProps } from '../infrastructure/stage/config';
 
 function synthesisMessageToString(sm: SynthesisMessage): string {
   return `${sm.entry.data} [${sm.id}]`;
 }
 
-describe('cdk-nag-hello-world-stack', () => {
+describe('cdk-nag-variant-monitoring-stack', () => {
   const app = new App({});
 
-  const deployStack = new HelloWorldStack(app, 'HelloWorldStack', {
+  const deployStack = new VariantMonitoringStack(app, 'VariantMonitoringStack', {
     ...getStackProps('BETA'),
     env: {
       account: '111111111111',

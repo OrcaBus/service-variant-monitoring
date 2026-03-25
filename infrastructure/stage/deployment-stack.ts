@@ -10,21 +10,22 @@ import {
   APP_ROOT,
   INCOMING_DETAIL_TYPE,
   INCOMING_EVENT_SOURCE,
+  INCOMING_STATUS_FILTER,
   INCOMING_WORKFLOW_NAME,
 } from './constants';
 
-export interface HelloWorldStackProps extends StackProps {
+export interface VariantMonitoringStackProps extends StackProps {
   mainBusName: string;
   stage: string;
 }
 
-export class HelloWorldStack extends Stack {
+export class VariantMonitoringStack extends Stack {
   private readonly lambdaRuntimePythonVersion: aws_lambda.Runtime = aws_lambda.Runtime.PYTHON_3_12;
   private readonly mainBus: IEventBus;
   private readonly lambdaRole: Role;
   private readonly baseLayer: PythonLayerVersion;
 
-  constructor(scope: Construct, id: string, props: HelloWorldStackProps) {
+  constructor(scope: Construct, id: string, props: VariantMonitoringStackProps) {
     super(scope, id, props);
 
     this.mainBus = EventBus.fromEventBusName(this, 'OrcaBusMain', props.mainBusName);
@@ -32,7 +33,7 @@ export class HelloWorldStack extends Stack {
     // Shared Lambda execution role
     this.lambdaRole = new Role(this, 'LambdaRole', {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
-      description: 'Lambda execution role for HelloWorld service',
+      description: 'Lambda execution role for VariantMonitoring service',
     });
     this.lambdaRole.addManagedPolicy(
       ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
@@ -46,47 +47,77 @@ export class HelloWorldStack extends Stack {
       })
     );
 
-    // Layer bundles the Python dependencies from requirements.txt
+    // Allow read access to any ICAv2 DRAGEN cache bucket (bucket name comes from outputUri at runtime)
+    this.lambdaRole.addToPolicy(
+      new PolicyStatement({
+        actions: ['s3:GetObject', 's3:ListBucket'],
+        resources: [
+          'arn:aws:s3:::pipeline-*-cache-*',
+          'arn:aws:s3:::pipeline-*-cache-*/*',
+        ],
+      })
+    );
+
+    // Allow reading the OrcaBus JWT token from Secrets Manager
+    this.lambdaRole.addToPolicy(
+      new PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [`arn:aws:secretsmanager:*:*:secret:orcabus/token-service-jwt*`],
+      })
+    );
+
+    // Allow reading the hostname SSM parameter
+    this.lambdaRole.addToPolicy(
+      new PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [`arn:aws:ssm:*:*:parameter/hosted_zone/umccr/name`],
+      })
+    );
+
+    // Layer bundles Python dependencies from requirements.txt
     this.baseLayer = new PythonLayerVersion(this, 'BaseLayer', {
       entry: path.join(APP_ROOT),
       compatibleRuntimes: [this.lambdaRuntimePythonVersion],
       compatibleArchitectures: [Architecture.ARM_64],
-      description: 'Hello World service dependencies',
+      description: 'VariantMonitoring service dependencies (pydantic, pysam)',
     });
 
-    this.createHelloWorldFunction(props.mainBusName);
+    this.createExtractVariantAfFunction(props);
   }
 
-  private createHelloWorldFunction(mainBusName: string): void {
-    const helloWorldFn = new PythonFunction(this, 'HelloWorldFunction', {
+  private createExtractVariantAfFunction(props: VariantMonitoringStackProps): void {
+    const extractFn = new PythonFunction(this, 'ExtractVariantAfFunction', {
       entry: path.join(APP_ROOT),
       runtime: this.lambdaRuntimePythonVersion,
       architecture: Architecture.ARM_64,
-      index: 'hello_world/lambdas/handler.py',
+      index: 'variant_monitoring/lambdas/extract_variant_af.py',
       handler: 'lambda_handler',
-      timeout: Duration.seconds(28),
-      memorySize: 512,
+      // pysam download + tabix queries need extra memory and time
+      timeout: Duration.minutes(5),
+      memorySize: 1024,
+      ephemeralStorageSize: aws_lambda.Size.gibibytes(2),
       layers: [this.baseLayer],
       role: this.lambdaRole,
       environment: {
-        EVENT_BUS_NAME: mainBusName,
+        EVENT_BUS_NAME: props.mainBusName,
+        ORCABUS_TOKEN_SECRET_ID: 'orcabus/token-service-jwt',
+        HOSTNAME_SSM_PARAMETER_NAME: '/hosted_zone/umccr/name',
       },
     });
 
-    // EventBridge rule: route WorkflowRunStateChange events for the hello-world workflow
-    const rule = new Rule(this, 'WorkflowRunStateChangeRule', {
+    // EventBridge rule: route SUCCEEDED Icav2WesAnalysisStateChange events for dragen-wgts-dna
+    const rule = new Rule(this, 'Icav2WesAnalysisStateChangeRule', {
       eventBus: this.mainBus,
       eventPattern: {
         source: [INCOMING_EVENT_SOURCE],
         detailType: [INCOMING_DETAIL_TYPE],
         detail: {
-          workflow: {
-            name: [INCOMING_WORKFLOW_NAME],
-          },
+          name: [{ wildcard: `*--${INCOMING_WORKFLOW_NAME}--*` }],
+          status: [INCOMING_STATUS_FILTER],
         },
       },
     });
 
-    rule.addTarget(new LambdaFunction(helloWorldFn));
+    rule.addTarget(new LambdaFunction(extractFn));
   }
 }
