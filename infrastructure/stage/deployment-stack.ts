@@ -105,14 +105,14 @@ export class VariantMonitoringStack extends Stack {
       },
     });
 
-    // EventBridge rule: route SUCCEEDED Icav2WesAnalysisStateChange events for dragen-wgts-dna
-    const rule = new Rule(this, 'Icav2WesAnalysisStateChangeRule', {
+    // EventBridge rule: route SUCCEEDED WorkflowRunStateChange events for dragen-wgts-dna
+    const rule = new Rule(this, 'WorkflowRunStateChangeRule', {
       eventBus: this.mainBus,
       eventPattern: {
         source: [INCOMING_EVENT_SOURCE],
         detailType: [INCOMING_DETAIL_TYPE],
         detail: {
-          name: [{ wildcard: `*--${INCOMING_WORKFLOW_NAME}--*` }],
+          workflow: { name: [INCOMING_WORKFLOW_NAME] },
           status: [INCOMING_STATUS_FILTER],
         },
       },
