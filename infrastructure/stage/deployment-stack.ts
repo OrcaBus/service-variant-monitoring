@@ -3,11 +3,12 @@ import { Construct } from 'constructs';
 import { Architecture } from 'aws-cdk-lib/aws-lambda';
 import { EventBus, IEventBus, Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
-import { aws_lambda, Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { aws_lambda, Duration, Size, Stack, StackProps } from 'aws-cdk-lib';
 import { PythonFunction, PythonLayerVersion } from '@aws-cdk/aws-lambda-python-alpha';
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import {
   APP_ROOT,
+  EXTRACT_VARIANT_AF_FUNCTION_NAME,
   INCOMING_DETAIL_TYPE,
   INCOMING_EVENT_SOURCE,
   INCOMING_STATUS_FILTER,
@@ -51,10 +52,7 @@ export class VariantMonitoringStack extends Stack {
     this.lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: ['s3:GetObject', 's3:ListBucket'],
-        resources: [
-          'arn:aws:s3:::pipeline-*-cache-*',
-          'arn:aws:s3:::pipeline-*-cache-*/*',
-        ],
+        resources: ['arn:aws:s3:::pipeline-*-cache-*', 'arn:aws:s3:::pipeline-*-cache-*/*'],
       })
     );
 
@@ -87,6 +85,7 @@ export class VariantMonitoringStack extends Stack {
 
   private createExtractVariantAfFunction(props: VariantMonitoringStackProps): void {
     const extractFn = new PythonFunction(this, 'ExtractVariantAfFunction', {
+      functionName: `${EXTRACT_VARIANT_AF_FUNCTION_NAME}-${props.stage.toLowerCase()}`,
       entry: path.join(APP_ROOT),
       runtime: this.lambdaRuntimePythonVersion,
       architecture: Architecture.ARM_64,
@@ -95,7 +94,7 @@ export class VariantMonitoringStack extends Stack {
       // pysam download + tabix queries need extra memory and time
       timeout: Duration.minutes(5),
       memorySize: 1024,
-      ephemeralStorageSize: aws_lambda.Size.gibibytes(2),
+      ephemeralStorageSize: Size.gibibytes(2),
       layers: [this.baseLayer],
       role: this.lambdaRole,
       environment: {
