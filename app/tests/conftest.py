@@ -3,38 +3,66 @@ import pysam
 
 
 @pytest.fixture
-def sample_icav2_wes_event():
-    """A complete EventBridge Icav2WesAnalysisStateChange event for dragen-wgts-dna."""
+def sample_wrsc_event():
+    """A complete EventBridge WorkflowRunStateChange SUCCEEDED event for dragen-wgts-dna.
+
+    Payload structure mirrors a real event captured from the
+    orca-dragen-wgts-dna--icav2WesEventToWrscEvent Step Function output (2026-03-16).
+    """
     return {
-        'id': 'abc-123',
-        'source': 'orcabus.icav2wesmanager',
-        'detail-type': 'Icav2WesAnalysisStateChange',
+        'id': 'eb-abc-123',
+        'source': 'orcabus.workflowmanager',
+        'detail-type': 'WorkflowRunStateChange',
         'time': '2026-03-12T00:00:00Z',
         'account': '123456789012',
         'region': 'ap-southeast-2',
         'detail': {
-            'id': 'analysis-01ABC123',
-            'name': 'orca--dragen-wgts-dna--20260312abcd1234',
+            'id': 'wfr-01ABC123',
+            'orcabusId': 'wfr.01JKABCDEFGHIJKL',
+            'portalRunId': '20260312abcd1234',  # pragma: allowlist secret
+            'workflowRunName': 'umccr--automated--dragen-wgts-dna--4-4-4--20260312abcd1234',
             'status': 'SUCCEEDED',
-            'tags': {
-                'portalRunId': '20260312abcd1234',  # pragma: allowlist secret
-                'libraryId': 'L2600148',
-                'subjectId': 'SBJ00027',
-                'individualId': 'NA12878',
+            'timestamp': '2026-03-12T00:00:00Z',
+            'workflow': {
+                'orcabusId': 'wfl.01KE5Q8Y35S9MHFFWRGNPKPRYW',
+                'name': 'dragen-wgts-dna',
+                'version': '4.4.4',
+                'codeVersion': '724101a',
+                'executionEngine': 'ICA',
             },
-            'inputs': {},
-            'engineParameters': {
-                'outputUri': 's3://test-cache-bucket/byob-icav2/development/analysis/dragen-wgts-dna/20260312abcd1234/',
+            'libraries': [
+                {'orcabusId': 'lib.01JBMVHMS2NTF2M71F5M2H89SJ', 'libraryId': 'L2600148'},
+            ],
+            'payload': {
+                'orcabusId': 'pld.01JKABCDEFGHIJKL',
+                'refId': 'iwa.01KKT075HJC15W3FQX4AHGA9MG',
+                'version': '2025.06.04',
+                'data': {
+                    'tags': {
+                        'libraryId': 'L2600148',
+                        'subjectId': 'SBJ00027',
+                        'individualId': 'NA12878',
+                    },
+                    'engineParameters': {
+                        'outputUri': 's3://test-cache-bucket/byob-icav2/development/analysis/dragen-wgts-dna/20260312abcd1234/',
+                        'logsUri': 's3://test-cache-bucket/byob-icav2/development/logs/dragen-wgts-dna/20260312abcd1234/',
+                        'projectId': 'ea19a3f5-ec7c-4940-a474-c31cd91dbad4',
+                        'pipelineId': '812c4ee5-b0bd-4c55-b4c2-cafe70ecfc8e',
+                    },
+                    'outputs': {
+                        'dragenGermlineVariantCallingOutputRelPath': 'L2600148__hg38__graph__dragen_wgts_dna_germline_variant_calling/',
+                    },
+                },
             },
         },
     }
 
 
 @pytest.fixture
-def sample_icav2_wes_event_running(sample_icav2_wes_event):
+def sample_wrsc_event_running(sample_wrsc_event):
     """Same event but with RUNNING status."""
-    event = dict(sample_icav2_wes_event)
-    event['detail'] = {**sample_icav2_wes_event['detail'], 'status': 'RUNNING'}
+    event = dict(sample_wrsc_event)
+    event['detail'] = {**sample_wrsc_event['detail'], 'status': 'RUNNING'}
     return event
 
 
