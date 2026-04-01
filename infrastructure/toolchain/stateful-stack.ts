@@ -9,15 +9,15 @@ export class StatefulStack extends cdk.Stack {
 
     new DeploymentStackPipeline(this, 'DeploymentPipeline', {
       githubBranch: 'main',
-      githubRepo: /** TODO: Replace with string. Example: */ 'service-microservice-manager',
-      stack: /** TODO: Replace with Stack (e.g. TheStateFULStack) */ this,
-      stackName: /** TODO: Replace with string. Example:  */ 'StatefulMicroserviceManager',
+      githubRepo: 'service-variant-monitoring',
+      stack: this,
+      stackName: 'VariantMonitoringStatefulStack',
       stackConfig: {
         beta: getStackProps('BETA'),
         gamma: getStackProps('GAMMA'),
         prod: getStackProps('PROD'),
       },
-      pipelineName: /** TODO: Replace with string. Example: */ 'OrcaBus-StatefulMicroservice',
+      pipelineName: 'OrcaBus-StatefulVariantMonitoring',
       cdkSynthCmd: ['pnpm install --frozen-lockfile --ignore-scripts', 'pnpm cdk-stateful synth'],
       unitAppTestConfig: {
         command: ['cd app && make install && make check && make test'],
