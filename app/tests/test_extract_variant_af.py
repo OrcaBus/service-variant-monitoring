@@ -335,6 +335,24 @@ class TestFindVcf:  # noqa: D101
     """Unit tests for S3 VCF discovery."""
 
     @mock_aws
+    def test_find_hard_filtered_vcf_tbi_missing(self):
+        """VCF found in S3 but tabix index absent raises FileNotFoundError (lines 120-121)."""
+        from tests.conftest import _local_session
+
+        s3 = _local_session().client('s3')
+        s3.create_bucket(
+            Bucket=BUCKET,
+            CreateBucketConfiguration={'LocationConstraint': 'ap-southeast-2'},
+        )
+        s3.put_object(Bucket=BUCKET, Key=VCF_KEY, Body=b'')
+        # intentionally NOT uploading TBI_KEY
+
+        from variant_monitoring.lambdas.extract_variant_af import find_hard_filtered_vcf
+
+        with pytest.raises(FileNotFoundError, match='Tabix index not found'):
+            find_hard_filtered_vcf(OUTPUT_URI)
+
+    @mock_aws
     def test_find_hard_filtered_vcf_success(self):
         from tests.conftest import _local_session
         s3 = _local_session().client('s3')
@@ -472,6 +490,82 @@ class TestExtractAllSites:
         assert result.dp == 0
         assert result.af == pytest.approx(0.0)
         assert result.filter_status == '.'
+
+    def test_extract_af_at_site_wrong_pos_skipped(self, tmp_path):
+        """Deletion overlapping the query window but at a different pos is skipped (line 166)."""
+        # Deletion at chr5:112827156 spans 0-based [112827155, 112827157),
+        # which overlaps the fetch window for pos=112827157 → returned by tabix
+        # but record.pos (112827156) != 112827157 → continue.
+        vcf_content = (
+            '##fileformat=VCFv4.2\n'
+            '##FILTER=<ID=PASS,Description="All filters passed">\n'
+            '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+            '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">\n'
+            '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
+            '##contig=<ID=chr5,length=181538259>\n'
+            '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n'
+            'chr5\t112827156\t.\tTC\tT\t.\tPASS\t.\tGT:DP:AF\t0/1:30:0.5\n'
+        )
+        plain = tmp_path / 'wrong_pos.vcf'
+        plain.write_text(vcf_content)
+        gz = str(plain) + '.gz'
+        pysam.tabix_compress(str(plain), gz, force=True)
+        pysam.tabix_index(gz, preset='vcf', force=True)
+
+        from variant_monitoring.lambdas.extract_variant_af import extract_af_at_site
+
+        with pysam.VariantFile(gz) as vcf_fh:
+            result = extract_af_at_site(vcf_fh, 'chr5', 112827157, 'T', 'C')
+
+        assert result.variant_emitted is False
+
+    def test_extract_af_at_site_wrong_ref_skipped(self, tmp_path):
+        """Record at correct pos but wrong ref is skipped (line 168)."""
+        vcf_content = (
+            '##fileformat=VCFv4.2\n'
+            '##FILTER=<ID=PASS,Description="All filters passed">\n'
+            '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+            '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">\n'
+            '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
+            '##contig=<ID=chr5,length=181538259>\n'
+            '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n'
+            'chr5\t112827157\t.\tG\tC\t.\tPASS\t.\tGT:DP:AF\t0/1:30:0.5\n'
+        )
+        plain = tmp_path / 'wrong_ref.vcf'
+        plain.write_text(vcf_content)
+        gz = str(plain) + '.gz'
+        pysam.tabix_compress(str(plain), gz, force=True)
+        pysam.tabix_index(gz, preset='vcf', force=True)
+
+        from variant_monitoring.lambdas.extract_variant_af import extract_af_at_site
+
+        with pysam.VariantFile(gz) as vcf_fh:
+            result = extract_af_at_site(vcf_fh, 'chr5', 112827157, 'T', 'C')
+
+        assert result.variant_emitted is False
+
+    def test_extract_af_at_site_pysam_exception_returns_not_emitted(self):
+        """pysam exception during fetch is caught; site returns variant_emitted=False (lines 192-193)."""
+        from unittest.mock import MagicMock
+
+        from variant_monitoring.lambdas.extract_variant_af import extract_af_at_site
+
+        mock_vcf = MagicMock()
+        mock_vcf.fetch.side_effect = Exception('pysam internal error')
+
+        result = extract_af_at_site(mock_vcf, 'chr5', 112827157, 'T', 'C')
+
+        assert result.variant_emitted is False
+        assert result.dp == 0
+        assert result.af == pytest.approx(0.0)
+
+    def test_extract_all_sites_uses_bundled_vcf_when_no_regions_fp(self, dragen_vcf):
+        """extract_all_sites uses the bundled varmon_10_sites.vcf when regions_fp is omitted (line 218)."""
+        from variant_monitoring.lambdas.extract_variant_af import extract_all_sites
+
+        results = extract_all_sites(dragen_vcf)
+
+        assert len(results) == 10
 
     def test_extract_all_sites_mixed(self, dragen_vcf, monitoring_sites_vcf_multi):
         """extract_all_sites handles a mix of PASS, filtered, and allele-mismatch sites."""

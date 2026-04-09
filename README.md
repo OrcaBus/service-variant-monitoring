@@ -232,6 +232,8 @@ pnpm test
 
 > **Note:** CDK tests synthesize the Lambda layer using Docker. Start Docker Desktop before running `pnpm test` locally.
 
+31 Python unit tests at 100% coverage, 4 CDK tests. For a full breakdown of what each test covers and smoke test results, see [`docs/testing.md`](docs/testing.md).
+
 
 Glossary & References
 --------------------------------------------------------------------------------
