@@ -37,6 +37,14 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.58.1"
   },
+  "pnpm": {
+    "overrides": {
+      "flatted": ">=3.4.2",
+      "picomatch": ">=4.0.4",
+      "brace-expansion": ">=2.0.3",
+      "minimatch>brace-expansion": ">=5.0.5"
+    }
+  },
   "dependencies": {
     "@aws-cdk/aws-lambda-python-alpha": "2.195.0-alpha.0",
     "@orcabus/platform-cdk-constructs": "1.2.6",
