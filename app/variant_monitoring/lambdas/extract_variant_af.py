@@ -265,9 +265,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Lambda entrypoint.
 
-    Parses the ICAv2 WES state-change event, enriches with metadata from the
-    OrcaBus APIs, extracts allele frequencies from the DRAGEN hard-filtered VCF,
-    and emits a VariantMonitoringResult event.
+    Parses the WorkflowRunStateChange event, extracts allele frequencies from
+    the DRAGEN hard-filtered VCF at the outputUri in the event payload, and
+    emits a VariantMonitoringResult event to the OrcaBus EventBridge bus.
     """
     logger.info(f'Received event: {json.dumps(event, default=str)}')
 
@@ -301,12 +301,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             f'payload.data.engineParameters.outputUri missing from event for portalRunId={portal_run_id}'
         )
 
+    # ---- Narrow VCF search to germline subdirectory when available ----
+    outputs = payload_data.outputs if payload_data else None
+    germline_rel_path = outputs.dragenGermlineVariantCallingOutputRelPath if outputs else None
+    vcf_search_uri = output_uri
+    if germline_rel_path:
+        vcf_search_uri = output_uri.rstrip('/') + '/' + germline_rel_path
+        logger.info(f'Narrowing VCF search to germline path: {vcf_search_uri}')
+    else:
+        logger.info(f'No germline output path in payload; searching full outputUri: {output_uri}')
+
     logger.info(
         f'subjectId={subject_id} individualId={individual_id} outputUri={output_uri}'
     )
 
     # ---- VCF extraction ----
-    bucket, vcf_key, tbi_key = find_hard_filtered_vcf(output_uri)
+    bucket, vcf_key, tbi_key = find_hard_filtered_vcf(vcf_search_uri)
 
     with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
         vcf_path = download_vcf(bucket, vcf_key, tbi_key, tmp_dir)

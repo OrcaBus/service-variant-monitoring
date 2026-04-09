@@ -15,3 +15,6 @@ export const INCOMING_STATUS_FILTER = 'SUCCEEDED';
 
 /** Events this service emits */
 export const OUTGOING_EVENT_SOURCE = 'orcabus.variantmonitoring';
+
+/** Lambda function name prefix — stage is appended at deploy time */
+export const EXTRACT_VARIANT_AF_FUNCTION_NAME = 'variant-monitoring-extract-variant-af';

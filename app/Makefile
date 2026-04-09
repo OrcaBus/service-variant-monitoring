@@ -4,11 +4,11 @@ install:
 	pip install -r requirements-dev.txt
 
 test:
-	pytest tests/ --cov=hello_world --cov-report=term-missing
+	pytest tests/ --cov=variant_monitoring --cov-report=term-missing
 
 check:
-	ruff check hello_world tests
+	ruff check variant_monitoring tests
 
 fix:
-	ruff check --fix hello_world tests
-	ruff format hello_world tests
+	ruff check --fix variant_monitoring tests
+	ruff format variant_monitoring tests

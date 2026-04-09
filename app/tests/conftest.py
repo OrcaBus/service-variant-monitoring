@@ -1,5 +1,35 @@
+import boto3
 import pytest
 import pysam
+from unittest.mock import patch
+
+
+def _local_session() -> boto3.Session:
+    """Return a boto3 Session with static test credentials (no SSO, no refresh)."""
+    return boto3.Session(
+        aws_access_key_id='testing',  # pragma: allowlist secret
+        aws_secret_access_key='testing',  # pragma: allowlist secret
+        aws_session_token='testing',  # pragma: allowlist secret
+        region_name='ap-southeast-2',
+    )
+
+
+@pytest.fixture(autouse=True)
+def _patch_lambda_aws_clients():
+    """Patch module-level boto3 clients in the Lambda with static-credential ones.
+
+    Prevents real SSO/IAM credential resolution during tests. moto still
+    intercepts all HTTP calls when @mock_aws is active.
+    """
+    session = _local_session()
+    with patch(
+        'variant_monitoring.lambdas.extract_variant_af.s3_client',
+        session.client('s3', region_name='ap-southeast-2'),
+    ), patch(
+        'variant_monitoring.lambdas.extract_variant_af.events_client',
+        session.client('events', region_name='ap-southeast-2'),
+    ):
+        yield
 
 
 @pytest.fixture
@@ -86,20 +116,26 @@ def monitoring_sites_vcf(tmp_path):
 
 @pytest.fixture
 def dragen_vcf(tmp_path):
-    """Bgzipped + tabix-indexed DRAGEN hard-filtered VCF with one variant.
+    """Bgzipped + tabix-indexed DRAGEN hard-filtered VCF with three variants.
 
-    chr5:112827157 T>C  DP=30, AF=0.5, FILTER=PASS
-    Used to test extract_af_at_site and extract_all_sites against real VCF data.
+    chr2:47803699  A>T  DP=20, AF=0.3,  FILTER=LowQual  (filtered but emitted)
+    chr5:112827157 T>C  DP=30, AF=0.5,  FILTER=PASS     (clean variant)
+    chr22:20985799 T>G  DP=25, AF=0.48, FILTER=PASS     (wrong alt — site expects T>C)
     """
     vcf_content = (
         '##fileformat=VCFv4.2\n'
         '##FILTER=<ID=PASS,Description="All filters passed">\n'
+        '##FILTER=<ID=LowQual,Description="Low quality">\n'
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">\n'
         '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
+        '##contig=<ID=chr2,length=242193529>\n'
         '##contig=<ID=chr5,length=181538259>\n'
+        '##contig=<ID=chr22,length=50818468>\n'
         '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tL2600148\n'
+        'chr2\t47803699\t.\tA\tT\t.\tLowQual\t.\tGT:DP:AF\t0/1:20:0.3\n'
         'chr5\t112827157\t.\tT\tC\t.\tPASS\t.\tGT:DP:AF\t0/1:30:0.5\n'
+        'chr22\t20985799\t.\tT\tG\t.\tPASS\t.\tGT:DP:AF\t0/1:25:0.48\n'
     )
     plain_path = tmp_path / 'L2600148.hard-filtered.vcf'
     plain_path.write_text(vcf_content)
@@ -109,3 +145,26 @@ def dragen_vcf(tmp_path):
     pysam.tabix_index(gz_path, preset='vcf', force=True)
 
     return tmp_path / 'L2600148.hard-filtered.vcf.gz'
+
+
+@pytest.fixture
+def monitoring_sites_vcf_multi(tmp_path):
+    """VCF with three monitoring sites for mixed found/filtered/not-found testing.
+
+    chr2:47803699  A>T  — filtered variant in dragen_vcf
+    chr5:112827157 T>C  — PASS variant in dragen_vcf
+    chr22:20985799 T>C  — allele mismatch (dragen_vcf has T>G)
+    """
+    vcf_content = (
+        '##fileformat=VCFv4.2\n'
+        '##contig=<ID=chr2,length=242193529>\n'
+        '##contig=<ID=chr5,length=181538259>\n'
+        '##contig=<ID=chr22,length=50818468>\n'
+        '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n'
+        'chr2\t47803699\t.\tA\tT\t.\t.\t.\n'
+        'chr5\t112827157\t.\tT\tC\t.\t.\t.\n'
+        'chr22\t20985799\t.\tT\tC\t.\t.\t.\n'
+    )
+    vcf_path = tmp_path / 'regions_multi.vcf'
+    vcf_path.write_text(vcf_content)
+    return vcf_path
