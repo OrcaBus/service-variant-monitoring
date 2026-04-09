@@ -173,6 +173,7 @@ class TestHandler:
         assert detail['libraryId'] == 'L2600148'
         assert detail['subjectId'] == 'SBJ00027'
         assert detail['individualId'] == 'NA12878'
+        assert detail['giabId'] == 'HG001'
         assert detail['outputUri'] == OUTPUT_URI
         assert detail['analysisName'] == 'umccr--automated--dragen-wgts-dna--4-4-4--20260312abcd1234'
         assert len(detail['monitoringSites']) == 10

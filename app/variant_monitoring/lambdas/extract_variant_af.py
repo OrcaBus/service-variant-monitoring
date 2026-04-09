@@ -40,6 +40,13 @@ EVENT_SOURCE = 'orcabus.variantmonitoring'
 EVENT_DETAIL_TYPE = 'VariantMonitoringResult'
 SUCCEEDED_STATUS = 'SUCCEEDED'
 
+# GIAB identifier mapping for known positive-control cell lines (NATA accreditation)
+INDIVIDUAL_ID_TO_GIAB_ID: Dict[str, str] = {
+    'NA12878': 'HG001',
+    'NA24385': 'HG002',
+    'NA24631': 'HG005',
+}
+
 # Reference VCF bundled with the Lambda that defines monitoring sites
 MONITORING_SITES_VCF = Path(__file__).parent.parent / 'references' / 'varmon_10_sites.vcf'
 
@@ -289,6 +296,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     library_id = tags.libraryId if tags else None
     subject_id = tags.subjectId if tags else None
     individual_id = tags.individualId if tags else None
+    giab_id = INDIVIDUAL_ID_TO_GIAB_ID.get(individual_id) if individual_id else None
 
     logger.info(
         f'Processing SUCCEEDED analysis: name={analysis_name} '
@@ -330,6 +338,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         libraryId=library_id,
         subjectId=subject_id,
         individualId=individual_id,
+        giabId=giab_id,
         analysisName=analysis_name,
         outputUri=output_uri,
         extractedAt=datetime.now(tz=timezone.utc),
