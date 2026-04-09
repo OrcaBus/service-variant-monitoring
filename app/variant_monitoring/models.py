@@ -139,6 +139,7 @@ class VariantMonitoringResultDetail(BaseModel):
     libraryId: Optional[str] = None
     subjectId: Optional[str] = None
     individualId: Optional[str] = None
+    giabId: Optional[str] = None
     analysisName: str
     outputUri: Optional[str] = None
     extractedAt: datetime
