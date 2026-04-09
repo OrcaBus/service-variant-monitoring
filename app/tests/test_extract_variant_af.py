@@ -335,7 +335,7 @@ class TestFindVcf:  # noqa: D101
 
     @mock_aws
     def test_find_hard_filtered_vcf_tbi_missing(self):
-        """VCF found in S3 but tabix index absent raises FileNotFoundError (lines 120-121)."""
+        """Raises FileNotFoundError when the VCF exists in S3 but its tabix index is missing."""
         from tests.conftest import _local_session
 
         s3 = _local_session().client('s3')
@@ -491,7 +491,7 @@ class TestExtractAllSites:
         assert result.filter_status == '.'
 
     def test_extract_af_at_site_wrong_pos_skipped(self, tmp_path):
-        """Deletion overlapping the query window but at a different pos is skipped (line 166)."""
+        """Deletion overlapping the query window but at a different pos is skipped; returns variant_emitted=False."""
         # Deletion at chr5:112827156 spans 0-based [112827155, 112827157),
         # which overlaps the fetch window for pos=112827157 → returned by tabix
         # but record.pos (112827156) != 112827157 → continue.
@@ -519,7 +519,7 @@ class TestExtractAllSites:
         assert result.variant_emitted is False
 
     def test_extract_af_at_site_wrong_ref_skipped(self, tmp_path):
-        """Record at correct pos but wrong ref is skipped (line 168)."""
+        """Record at correct pos but wrong ref is skipped; returns variant_emitted=False."""
         vcf_content = (
             '##fileformat=VCFv4.2\n'
             '##FILTER=<ID=PASS,Description="All filters passed">\n'
@@ -544,7 +544,7 @@ class TestExtractAllSites:
         assert result.variant_emitted is False
 
     def test_extract_af_at_site_pysam_exception_returns_not_emitted(self):
-        """pysam exception during fetch is caught; site returns variant_emitted=False (lines 192-193)."""
+        """pysam exception during fetch is caught; site returns variant_emitted=False without crashing."""
         from unittest.mock import MagicMock
 
         from variant_monitoring.lambdas.extract_variant_af import extract_af_at_site
@@ -559,7 +559,7 @@ class TestExtractAllSites:
         assert result.af == pytest.approx(0.0)
 
     def test_extract_all_sites_uses_bundled_vcf_when_no_regions_fp(self, dragen_vcf):
-        """extract_all_sites uses the bundled varmon_10_sites.vcf when regions_fp is omitted (line 218)."""
+        """extract_all_sites uses the bundled varmon_10_sites.vcf when regions_fp is omitted."""
         from variant_monitoring.lambdas.extract_variant_af import extract_all_sites
 
         results = extract_all_sites(dragen_vcf)
