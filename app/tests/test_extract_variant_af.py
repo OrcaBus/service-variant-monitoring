@@ -9,7 +9,6 @@ import os
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-import boto3
 import pysam
 import pytest
 from moto import mock_aws
