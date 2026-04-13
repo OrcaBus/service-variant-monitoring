@@ -305,13 +305,15 @@ class TestModels:
         from variant_monitoring.models import MonitoringSiteResult, VariantMonitoringResultDetail
 
         detail = VariantMonitoringResultDetail(
+            id='abc123',
+            version='0.1.0',
+            timestamp=datetime.now(tz=timezone.utc),
             portalRunId=PORTAL_RUN_ID,
             libraryId='L2600148',
             subjectId='SBJ00027',
             individualId='NA12878',
             analysisName='orca--dragen-wgts-dna--20260312abcd1234',
             outputUri=OUTPUT_URI,
-            extractedAt=datetime.now(tz=timezone.utc),
             monitoringSites=[
                 MonitoringSiteResult(
                     chrom='chr5',

@@ -129,8 +129,24 @@ def _parse_vcf_s3_uri(s3_uri: str) -> tuple[str, str, str, str, str]:
 # ---- VCF cropping ----------------------------------------------------------
 
 
+def _ensure_tbi(vcf_gz: Path) -> None:
+    """Create a tabix index for vcf_gz in-place if one does not already exist.
+
+    TODO: remove once all DRAGEN outputs reliably include a .tbi index.
+    """
+    tbi = Path(str(vcf_gz) + '.tbi')
+    if tbi.exists():
+        return
+    print(f'  No .tbi found for {vcf_gz.name} — generating tabix index...')
+    pysam.tabix_index(str(vcf_gz), preset='vcf', force=True)
+    print('  done')
+
+
 def crop_vcf(source_vcf: Path, library_id: str, out_dir: Path) -> tuple[Path, Path]:
     """Extract monitoring site records from source_vcf into a bgzipped+indexed VCF."""
+    # TODO: remove _ensure_tbi call once all DRAGEN outputs include a .tbi
+    _ensure_tbi(source_vcf)
+
     plain = out_dir / f'{library_id}.hard-filtered.vcf'
     gz = out_dir / f'{library_id}.hard-filtered.vcf.gz'
     tbi = Path(str(gz) + '.tbi')
