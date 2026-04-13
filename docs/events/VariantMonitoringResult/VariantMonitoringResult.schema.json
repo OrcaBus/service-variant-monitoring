@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$id": "https://raw.githubusercontent.com/OrcaBus/service-variant-monitoring/refs/heads/main/docs/events/VariantMonitoringResult/VariantMonitoringResult.schema.json",
+  "description": "EventBridge custom event schema for VariantMonitoringResult events",
+  "title": "AWSEvent",
+  "definitions": {
+    "VariantMonitoringResult": {
+      "type": "object",
+      "required": ["id", "version", "timestamp", "portalRunId", "analysisName", "monitoringSites"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic MD5 hash of portalRunId — used for deduplication."
+        },
+        "version": {
+          "type": "string",
+          "description": "Schema version of this event, e.g. 0.1.0"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time at which allele-frequency extraction completed."
+        },
+        "portalRunId": {
+          "type": "string"
+        },
+        "workflowRunOrcabusId": {
+          "type": "string",
+          "description": "OrcaBus ID of the WorkflowRun (wfr.<ULID>) — use to cross-reference the Workflow Manager."
+        },
+        "workflowName": {
+          "type": "string",
+          "description": "Name of the workflow that produced this result, e.g. dragen-wgts-dna."
+        },
+        "workflowVersion": {
+          "type": "string",
+          "description": "Version of the workflow, e.g. 4.4.4."
+        },
+        "libraryId": {
+          "type": "string"
+        },
+        "libraryOrcabusId": {
+          "type": "string",
+          "description": "OrcaBus ID of the Library (lib.<ULID>) — use to cross-reference the Metadata Manager."
+        },
+        "subjectId": {
+          "type": "string"
+        },
+        "individualId": {
+          "type": "string"
+        },
+        "giabId": {
+          "type": "string",
+          "description": "GIAB identifier for known positive-control cell lines (e.g. HG001). Null when individualId is not a recognised GIAB cell line."
+        },
+        "analysisName": {
+          "type": "string"
+        },
+        "outputUri": {
+          "type": "string"
+        },
+        "monitoringSites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MonitoringSiteResult"
+          }
+        }
+      }
+    },
+    "MonitoringSiteResult": {
+      "type": "object",
+      "required": ["chrom", "pos", "ref", "alt", "dp", "af", "filter_status", "variant_emitted"],
+      "properties": {
+        "chrom": {
+          "type": "string"
+        },
+        "pos": {
+          "type": "integer"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "dp": {
+          "type": "integer",
+          "description": "Read depth at this position. 0 when the variant was not emitted."
+        },
+        "af": {
+          "type": "number",
+          "description": "Allele frequency. 0.0 when the variant was not emitted."
+        },
+        "filter_status": {
+          "type": "string",
+          "description": "VCF FILTER value (e.g. PASS, LowQual). '.' when the variant was not emitted."
+        },
+        "variant_emitted": {
+          "type": "boolean",
+          "description": "True when the variant was present in the DRAGEN hard-filtered VCF at this site."
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "account": {
+      "type": "string"
+    },
+    "detail-type": {
+      "type": "string"
+    },
+    "detail": {
+      "$ref": "#/definitions/VariantMonitoringResult"
+    }
+  },
+  "required": ["detail", "detail-type", "source"]
+}

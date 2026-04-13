@@ -15,6 +15,15 @@ from pydantic import BaseModel, Field
 # ---- Incoming event models (WorkflowRunStateChange) ----
 
 
+class WrscReadset(BaseModel):
+    """Readset entry within a Library."""
+
+    orcabusId: str
+    rgid: str
+
+    model_config = {'extra': 'allow'}
+
+
 class WrscWorkflow(BaseModel):
     """Workflow definition sub-object."""
 
@@ -23,6 +32,17 @@ class WrscWorkflow(BaseModel):
     version: str
     codeVersion: Optional[str] = None
     executionEngine: Optional[str] = None
+    executionEnginePipelineId: Optional[str] = None
+    validationState: Optional[str] = None
+
+    model_config = {'extra': 'allow'}
+
+
+class WrscAnalysisRun(BaseModel):
+    """AnalysisRun reference embedded in a WorkflowRunStateChange."""
+
+    orcabusId: str
+    name: str
 
     model_config = {'extra': 'allow'}
 
@@ -32,6 +52,7 @@ class WrscLibrary(BaseModel):
 
     orcabusId: str
     libraryId: str
+    readsets: List[WrscReadset] = []
 
     model_config = {'extra': 'allow'}
 
@@ -90,11 +111,15 @@ class WorkflowRunStateChangeDetail(BaseModel):
     """detail payload of a WorkflowRunStateChange EventBridge event."""
 
     id: Optional[str] = None
+    version: Optional[str] = None
     orcabusId: Optional[str] = None
     portalRunId: str
     workflowRunName: str
     workflow: WrscWorkflow
+    analysisRun: Optional[WrscAnalysisRun] = None
     libraries: List[WrscLibrary] = []
+    computeEnv: Optional[str] = None
+    storageEnv: Optional[str] = None
     status: str
     timestamp: Optional[datetime] = None
     payload: Optional[WrscPayload] = None
@@ -133,14 +158,24 @@ class MonitoringSiteResult(BaseModel):
 
 
 class VariantMonitoringResultDetail(BaseModel):
-    """Payload emitted to EventBridge after extracting AFs from a DRAGEN VCF."""
+    """Payload emitted to EventBridge after extracting AFs from a DRAGEN VCF.
 
+    Follows the OrcaBus event standard: id (deterministic hash), version
+    (schema semver), timestamp (emission time), plus service-specific fields.
+    """
+
+    id: str
+    version: str
+    timestamp: datetime
     portalRunId: str
+    workflowRunOrcabusId: Optional[str] = None
+    workflowName: Optional[str] = None
+    workflowVersion: Optional[str] = None
     libraryId: Optional[str] = None
+    libraryOrcabusId: Optional[str] = None
     subjectId: Optional[str] = None
     individualId: Optional[str] = None
     giabId: Optional[str] = None
     analysisName: str
     outputUri: Optional[str] = None
-    extractedAt: datetime
     monitoringSites: List[MonitoringSiteResult]

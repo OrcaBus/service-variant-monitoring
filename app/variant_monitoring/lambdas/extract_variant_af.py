@@ -6,6 +6,7 @@ analyses. Downloads the DRAGEN hard-filtered VCF from S3, queries germline
 variant monitoring sites with pysam/tabix, then emits a VariantMonitoringResult
 event to the OrcaBus EventBridge bus.
 """
+import hashlib
 import json
 import logging
 import os
@@ -38,6 +39,7 @@ EVENT_BUS_NAME = os.environ.get('EVENT_BUS_NAME', 'OrcaBusMain')
 # ---- Constants ----
 EVENT_SOURCE = 'orcabus.variantmonitoring'
 EVENT_DETAIL_TYPE = 'VariantMonitoringResult'
+EVENT_SCHEMA_VERSION = '0.1.0'
 SUCCEEDED_STATUS = 'SUCCEEDED'
 
 # GIAB identifier mapping for known positive-control cell lines (NATA accreditation)
@@ -287,6 +289,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     portal_run_id = detail.portalRunId
     analysis_name = detail.workflowRunName
+    workflow_run_orcabus_id = detail.orcabusId
+    workflow_name = detail.workflow.name
+    workflow_version = detail.workflow.version
+
+    # ---- Extract fields from libraries list ----
+    library_orcabus_id = detail.libraries[0].orcabusId if detail.libraries else None
 
     # ---- Extract fields from the nested payload.data block ----
     payload_data = detail.payload.data if (detail.payload and detail.payload.data) else None
@@ -333,15 +341,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     n_emitted = sum(1 for r in site_results if r.variant_emitted)
     logger.info(f'Extracted AF at {n_emitted}/{len(site_results)} sites')
 
+    now = datetime.now(tz=timezone.utc)
     result_detail = VariantMonitoringResultDetail(
+        id=hashlib.md5(portal_run_id.encode()).hexdigest(),
+        version=EVENT_SCHEMA_VERSION,
+        timestamp=now,
         portalRunId=portal_run_id,
+        workflowRunOrcabusId=workflow_run_orcabus_id,
+        workflowName=workflow_name,
+        workflowVersion=workflow_version,
         libraryId=library_id,
+        libraryOrcabusId=library_orcabus_id,
         subjectId=subject_id,
         individualId=individual_id,
         giabId=giab_id,
         analysisName=analysis_name,
         outputUri=output_uri,
-        extractedAt=datetime.now(tz=timezone.utc),
         monitoringSites=site_results,
     )
 

@@ -1,0 +1,58 @@
+{
+  "version": "0",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "detail-type": "VariantMonitoringResult",
+  "source": "orcabus.variantmonitoring",
+  "account": "123456789012",
+  "time": "2026-03-12T00:15:00Z",
+  "region": "ap-southeast-2",
+  "resources": [],
+  "detail": {
+    "id": "c688d090600947891fe520d178000bfd",
+    "version": "0.1.0",
+    "timestamp": "2026-03-12T00:15:00Z",
+    "portalRunId": "20260312abcd1234",
+    "workflowRunOrcabusId": "wfr.01JKABCDEFGHIJKL",
+    "workflowName": "dragen-wgts-dna",
+    "workflowVersion": "4.4.4",
+    "libraryId": "L2600148",
+    "libraryOrcabusId": "lib.01JBMVHMS2NTF2M71F5M2H89SJ",
+    "subjectId": "SBJ00027",
+    "individualId": "NA12878",
+    "giabId": "HG001",
+    "analysisName": "umccr--automated--dragen-wgts-dna--4-4-4--20260312abcd1234",
+    "outputUri": "s3://pipeline-dev-cache-503977275616-ap-southeast-2/byob-icav2/development/analysis/dragen-wgts-dna/20260312abcd1234/",
+    "monitoringSites": [
+      {
+        "chrom": "chr2",
+        "pos": 47803699,
+        "ref": "A",
+        "alt": "T",
+        "dp": 45,
+        "af": 0.511,
+        "filter_status": "PASS",
+        "variant_emitted": true
+      },
+      {
+        "chrom": "chr5",
+        "pos": 112827157,
+        "ref": "T",
+        "alt": "C",
+        "dp": 52,
+        "af": 0.5,
+        "filter_status": "PASS",
+        "variant_emitted": true
+      },
+      {
+        "chrom": "chr22",
+        "pos": 20985799,
+        "ref": "T",
+        "alt": "C",
+        "dp": 0,
+        "af": 0.0,
+        "filter_status": ".",
+        "variant_emitted": false
+      }
+    ]
+  }
+}
