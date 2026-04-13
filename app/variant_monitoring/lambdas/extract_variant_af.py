@@ -127,7 +127,13 @@ def find_hard_filtered_vcf(output_uri: str) -> Tuple[str, str, str]:
     try:
         s3_client.head_object(Bucket=bucket, Key=tbi_key)
     except Exception:
-        raise FileNotFoundError(f'Tabix index not found: s3://{bucket}/{tbi_key}')
+        # TODO: remove once all DRAGEN outputs reliably include a .tbi index.
+        #       Some analyses complete without generating the tabix index; we fall
+        #       back to building it locally after the VCF is downloaded.
+        logger.warning(
+            f'Tabix index not found in S3 (s3://{bucket}/{tbi_key}) — '
+            f'will generate locally after downloading the VCF'
+        )
 
     logger.info(f'Found VCF: s3://{bucket}/{vcf_key}')
     return bucket, vcf_key, tbi_key
@@ -139,15 +145,24 @@ def find_hard_filtered_vcf(output_uri: str) -> Tuple[str, str, str]:
 
 
 def download_vcf(bucket: str, vcf_key: str, tbi_key: str, tmp_dir: str) -> Path:
-    """Download VCF and tabix index to a local directory; return VCF path."""
+    """Download VCF and tabix index to a local directory; return VCF path.
+
+    If the tabix index is absent from S3 the VCF is indexed locally.
+    TODO: remove the local-indexing fallback once all DRAGEN outputs include .tbi.
+    """
     vcf_path = Path(tmp_dir) / 'input.hard-filtered.vcf.gz'
     tbi_path = Path(tmp_dir) / 'input.hard-filtered.vcf.gz.tbi'
 
     logger.info(f'Downloading s3://{bucket}/{vcf_key}')
     s3_client.download_file(bucket, vcf_key, str(vcf_path))
 
-    logger.info(f'Downloading s3://{bucket}/{tbi_key}')
-    s3_client.download_file(bucket, tbi_key, str(tbi_path))
+    try:
+        logger.info(f'Downloading s3://{bucket}/{tbi_key}')
+        s3_client.download_file(bucket, tbi_key, str(tbi_path))
+    except Exception:
+        # TODO: remove once all DRAGEN outputs reliably include a .tbi index
+        logger.warning(f'Could not download .tbi from S3 — generating tabix index locally')
+        pysam.tabix_index(str(vcf_path), preset='vcf', force=True)
 
     return vcf_path
 
