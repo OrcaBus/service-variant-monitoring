@@ -78,6 +78,37 @@ class TestHandler:
         eb = _local_session().client('events')
         eb.create_event_bus(Name='OrcaBusMain')
 
+    def test_handler_skips_multiple_libraries(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        # Real production dragen-wgts-dna event (portalRunId=20260408604c7e56) with 2 libraries
+        event = dict(sample_wrsc_event)
+        event['detail'] = {
+            **sample_wrsc_event['detail'],
+            'libraries': [
+                {'orcabusId': 'lib.01JBMTS8YCE48WBFRYH18ACNWS', 'libraryId': 'L2101472'},
+                {'orcabusId': 'lib.01JBMTS8X2BXR3PZHH9X2GHFK8', 'libraryId': 'L2101471'},
+            ],
+        }
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'libraries=2' in result['reason']
+
+    def test_handler_skips_zero_libraries(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        event = dict(sample_wrsc_event)
+        event['detail'] = {**sample_wrsc_event['detail'], 'libraries': []}
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'libraries=0' in result['reason']
+
     def test_handler_skips_non_succeeded(self, sample_wrsc_event_running):
         from variant_monitoring.lambdas.extract_variant_af import lambda_handler
 
@@ -338,7 +369,7 @@ class TestFindVcf:  # noqa: D101
 
     @mock_aws
     def test_find_hard_filtered_vcf_tbi_missing(self):
-        """Raises FileNotFoundError when the VCF exists in S3 but its tabix index is missing."""
+        """Returns normally when VCF exists but tabix index is absent — fallback to local indexing."""
         from tests.conftest import _local_session
 
         s3 = _local_session().client('s3')
@@ -351,8 +382,10 @@ class TestFindVcf:  # noqa: D101
 
         from variant_monitoring.lambdas.extract_variant_af import find_hard_filtered_vcf
 
-        with pytest.raises(FileNotFoundError, match='Tabix index not found'):
-            find_hard_filtered_vcf(OUTPUT_URI)
+        bucket, vcf_key, tbi_key = find_hard_filtered_vcf(OUTPUT_URI)
+        assert bucket == BUCKET
+        assert vcf_key == VCF_KEY
+        assert tbi_key == TBI_KEY
 
     @mock_aws
     def test_find_hard_filtered_vcf_success(self):
