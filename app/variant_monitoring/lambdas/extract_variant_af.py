@@ -161,7 +161,7 @@ def download_vcf(bucket: str, vcf_key: str, tbi_key: str, tmp_dir: str) -> Path:
         s3_client.download_file(bucket, tbi_key, str(tbi_path))
     except Exception:
         # TODO: remove once all DRAGEN outputs reliably include a .tbi index
-        logger.warning(f'Could not download .tbi from S3 — generating tabix index locally')
+        logger.warning('Could not download .tbi from S3 — generating tabix index locally')
         pysam.tabix_index(str(vcf_path), preset='vcf', force=True)
 
     return vcf_path
