@@ -326,6 +326,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     individual_id = tags.individualId if tags else None
     giab_id = INDIVIDUAL_ID_TO_GIAB_ID.get(individual_id) if individual_id else None
 
+    # ---- Filter: only process known GIAB batch-control samples ----
+    if not giab_id:
+        logger.info(f'Skipping non-batch-control run (individualId={individual_id})')
+        return {'statusCode': 200, 'skipped': True, 'reason': f'individualId={individual_id} not a GIAB batch control'}
+
     logger.info(
         f'Processing SUCCEEDED analysis: name={analysis_name} '
         f'portalRunId={portal_run_id} libraryId={library_id}'
