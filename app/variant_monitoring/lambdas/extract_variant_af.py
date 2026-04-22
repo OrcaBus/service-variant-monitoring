@@ -308,8 +308,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     workflow_name = detail.workflow.name
     workflow_version = detail.workflow.version
 
+    # ---- Filter: only process runs with exactly one library ----
+    if len(detail.libraries) != 1:
+        logger.info(f'Skipping event with {len(detail.libraries)} libraries (expected 1)')
+        return {'statusCode': 200, 'skipped': True, 'reason': f'libraries={len(detail.libraries)}'}
+
     # ---- Extract fields from libraries list ----
-    library_orcabus_id = detail.libraries[0].orcabusId if detail.libraries else None
+    library_orcabus_id = detail.libraries[0].orcabusId
 
     # ---- Extract fields from the nested payload.data block ----
     payload_data = detail.payload.data if (detail.payload and detail.payload.data) else None
