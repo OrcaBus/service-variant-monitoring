@@ -109,6 +109,24 @@ class TestHandler:
         assert result['skipped'] is True
         assert 'libraries=0' in result['reason']
 
+    def test_handler_skips_non_batch_control(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        event = dict(sample_wrsc_event)
+        detail = dict(sample_wrsc_event['detail'])
+        payload = dict(sample_wrsc_event['detail']['payload'])
+        data = dict(sample_wrsc_event['detail']['payload']['data'])
+        data['tags'] = {**data['tags'], 'individualId': 'NA99999'}
+        payload['data'] = data
+        detail['payload'] = payload
+        event['detail'] = detail
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'not a GIAB batch control' in result['reason']
+
     def test_handler_skips_non_succeeded(self, sample_wrsc_event_running):
         from variant_monitoring.lambdas.extract_variant_af import lambda_handler
 
@@ -252,7 +270,15 @@ class TestHandler:
         event = dict(sample_wrsc_event)
         event['detail'] = {
             **sample_wrsc_event['detail'],
-            'payload': None,
+            'payload': {
+                'orcabusId': 'pld.test',
+                'version': '2025.06.04',
+                'data': {
+                    'tags': {'libraryId': 'L2600148', 'subjectId': 'SBJ00027', 'individualId': 'NA12878'},
+                    'engineParameters': {},
+                    'outputs': {'dragenGermlineVariantCallingOutputRelPath': 'germline/'},
+                },
+            },
         }
 
         from variant_monitoring.lambdas.extract_variant_af import lambda_handler
