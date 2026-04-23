@@ -395,7 +395,7 @@ class TestFindVcf:  # noqa: D101
 
     @mock_aws
     def test_find_hard_filtered_vcf_tbi_missing(self):
-        """Returns normally when VCF exists but tabix index is absent — fallback to local indexing."""
+        """Raises FileNotFoundError when the VCF exists in S3 but its tabix index is missing."""
         from tests.conftest import _local_session
 
         s3 = _local_session().client('s3')
@@ -408,10 +408,8 @@ class TestFindVcf:  # noqa: D101
 
         from variant_monitoring.lambdas.extract_variant_af import find_hard_filtered_vcf
 
-        bucket, vcf_key, tbi_key = find_hard_filtered_vcf(OUTPUT_URI)
-        assert bucket == BUCKET
-        assert vcf_key == VCF_KEY
-        assert tbi_key == TBI_KEY
+        with pytest.raises(FileNotFoundError, match='Tabix index not found'):
+            find_hard_filtered_vcf(OUTPUT_URI)
 
     @mock_aws
     def test_find_hard_filtered_vcf_success(self):
