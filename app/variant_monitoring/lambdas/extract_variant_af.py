@@ -43,7 +43,7 @@ EVENT_SCHEMA_VERSION = '0.1.0'
 SUCCEEDED_STATUS = 'SUCCEEDED'
 
 # GIAB identifier mapping for known positive-control cell lines (NATA accreditation)
-INDIVIDUAL_ID_TO_GIAB_ID: Dict[str, str] = {
+SUBJECT_ID_TO_GIAB_ID: Dict[str, str] = {
     'NA12878': 'HG001',
     'NA24385': 'HG002',
     'NA24631': 'HG005',
@@ -324,12 +324,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     library_id = tags.libraryId if tags else None
     subject_id = tags.subjectId if tags else None
     individual_id = tags.individualId if tags else None
-    giab_id = INDIVIDUAL_ID_TO_GIAB_ID.get(individual_id) if individual_id else None
+    giab_id = SUBJECT_ID_TO_GIAB_ID.get(subject_id) if subject_id else None
 
     # ---- Filter: only process known GIAB batch-control samples ----
     if not giab_id:
-        logger.info(f'Skipping non-batch-control run (individualId={individual_id})')
-        return {'statusCode': 200, 'skipped': True, 'reason': f'individualId={individual_id} not a GIAB batch control'}
+        logger.info(f'Skipping non-batch-control run (subjectId={subject_id})')
+        return {'statusCode': 200, 'skipped': True, 'reason': f'subjectId={subject_id} not a GIAB batch control'}
 
     logger.info(
         f'Processing SUCCEEDED analysis: name={analysis_name} '

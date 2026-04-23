@@ -116,7 +116,7 @@ class TestHandler:
         detail = dict(sample_wrsc_event['detail'])
         payload = dict(sample_wrsc_event['detail']['payload'])
         data = dict(sample_wrsc_event['detail']['payload']['data'])
-        data['tags'] = {**data['tags'], 'individualId': 'NA99999'}
+        data['tags'] = {**data['tags'], 'subjectId': 'NA99999'}
         payload['data'] = data
         detail['payload'] = payload
         event['detail'] = detail
@@ -220,8 +220,8 @@ class TestHandler:
         detail = json.loads(entry['Detail'])
         assert detail['portalRunId'] == PORTAL_RUN_ID
         assert detail['libraryId'] == 'L2600148'
-        assert detail['subjectId'] == 'SBJ00027'
-        assert detail['individualId'] == 'NA12878'
+        assert detail['subjectId'] == 'NA12878'
+        assert detail['individualId'] == 'SBJ00027'
         assert detail['giabId'] == 'HG001'
         assert detail['outputUri'] == OUTPUT_URI
         assert detail['analysisName'] == 'umccr--automated--dragen-wgts-dna--4-4-4--20260312abcd1234'
@@ -274,7 +274,7 @@ class TestHandler:
                 'orcabusId': 'pld.test',
                 'version': '2025.06.04',
                 'data': {
-                    'tags': {'libraryId': 'L2600148', 'subjectId': 'SBJ00027', 'individualId': 'NA12878'},
+                    'tags': {'libraryId': 'L2600148', 'subjectId': 'NA12878', 'individualId': 'SBJ00027'},
                     'engineParameters': {},
                     'outputs': {'dragenGermlineVariantCallingOutputRelPath': 'germline/'},
                 },
@@ -367,8 +367,8 @@ class TestModels:
             timestamp=datetime.now(tz=timezone.utc),
             portalRunId=PORTAL_RUN_ID,
             libraryId='L2600148',
-            subjectId='SBJ00027',
-            individualId='NA12878',
+            subjectId='NA12878',
+            individualId='SBJ00027',
             analysisName='orca--dragen-wgts-dna--20260312abcd1234',
             outputUri=OUTPUT_URI,
             monitoringSites=[
