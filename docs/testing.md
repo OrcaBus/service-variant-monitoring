@@ -22,6 +22,16 @@ cd app && make test
 pnpm test
 ```
 
+## Deploying to Dev (Beta)
+
+Deploy directly to the beta stage without triggering the full pipeline:
+
+```sh
+AWS_PROFILE=umccr-dev-pu pnpm cdk-stateless deploy \
+  OrcaBusStatelessVariantMonitoringStack/DeploymentPipeline/OrcaBusBeta/VariantMonitoringStack \
+  --require-approval never -e
+```
+
 ## Python Unit Tests
 
 Tests live in `app/tests/`. Fixtures are defined in `app/tests/conftest.py`.

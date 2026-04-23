@@ -78,6 +78,55 @@ class TestHandler:
         eb = _local_session().client('events')
         eb.create_event_bus(Name='OrcaBusMain')
 
+    def test_handler_skips_multiple_libraries(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        # Real production dragen-wgts-dna event (portalRunId=20260408604c7e56) with 2 libraries
+        event = dict(sample_wrsc_event)
+        event['detail'] = {
+            **sample_wrsc_event['detail'],
+            'libraries': [
+                {'orcabusId': 'lib.01JBMTS8YCE48WBFRYH18ACNWS', 'libraryId': 'L2101472'},
+                {'orcabusId': 'lib.01JBMTS8X2BXR3PZHH9X2GHFK8', 'libraryId': 'L2101471'},
+            ],
+        }
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'libraries=2' in result['reason']
+
+    def test_handler_skips_zero_libraries(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        event = dict(sample_wrsc_event)
+        event['detail'] = {**sample_wrsc_event['detail'], 'libraries': []}
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'libraries=0' in result['reason']
+
+    def test_handler_skips_non_batch_control(self, sample_wrsc_event):
+        from variant_monitoring.lambdas.extract_variant_af import lambda_handler
+
+        event = dict(sample_wrsc_event)
+        detail = dict(sample_wrsc_event['detail'])
+        payload = dict(sample_wrsc_event['detail']['payload'])
+        data = dict(sample_wrsc_event['detail']['payload']['data'])
+        data['tags'] = {**data['tags'], 'subjectId': 'NA99999'}
+        payload['data'] = data
+        detail['payload'] = payload
+        event['detail'] = detail
+
+        result = lambda_handler(event, None)
+
+        assert result['statusCode'] == 200
+        assert result['skipped'] is True
+        assert 'not a GIAB batch control' in result['reason']
+
     def test_handler_skips_non_succeeded(self, sample_wrsc_event_running):
         from variant_monitoring.lambdas.extract_variant_af import lambda_handler
 
@@ -171,8 +220,8 @@ class TestHandler:
         detail = json.loads(entry['Detail'])
         assert detail['portalRunId'] == PORTAL_RUN_ID
         assert detail['libraryId'] == 'L2600148'
-        assert detail['subjectId'] == 'SBJ00027'
-        assert detail['individualId'] == 'NA12878'
+        assert detail['subjectId'] == 'NA12878'
+        assert detail['individualId'] == 'SBJ00027'
         assert detail['giabId'] == 'HG001'
         assert detail['outputUri'] == OUTPUT_URI
         assert detail['analysisName'] == 'umccr--automated--dragen-wgts-dna--4-4-4--20260312abcd1234'
@@ -221,7 +270,15 @@ class TestHandler:
         event = dict(sample_wrsc_event)
         event['detail'] = {
             **sample_wrsc_event['detail'],
-            'payload': None,
+            'payload': {
+                'orcabusId': 'pld.test',
+                'version': '2025.06.04',
+                'data': {
+                    'tags': {'libraryId': 'L2600148', 'subjectId': 'NA12878', 'individualId': 'SBJ00027'},
+                    'engineParameters': {},
+                    'outputs': {'dragenGermlineVariantCallingOutputRelPath': 'germline/'},
+                },
+            },
         }
 
         from variant_monitoring.lambdas.extract_variant_af import lambda_handler
@@ -310,8 +367,8 @@ class TestModels:
             timestamp=datetime.now(tz=timezone.utc),
             portalRunId=PORTAL_RUN_ID,
             libraryId='L2600148',
-            subjectId='SBJ00027',
-            individualId='NA12878',
+            subjectId='NA12878',
+            individualId='SBJ00027',
             analysisName='orca--dragen-wgts-dna--20260312abcd1234',
             outputUri=OUTPUT_URI,
             monitoringSites=[

@@ -3,18 +3,17 @@ Variant Monitoring Service
 
 - [Variant Monitoring Service](#variant-monitoring-service)
   - [Service Description](#service-description)
-    - [Name & responsibility](#name--responsibility)
+    - [Name \& responsibility](#name--responsibility)
     - [Description](#description)
     - [Consumed Events](#consumed-events)
     - [Published Events](#published-events)
-    - [Data states & persistence model](#data-states--persistence-model)
+    - [Data states \& persistence model](#data-states--persistence-model)
     - [Major Business Rules](#major-business-rules)
-    - [Permissions & Access Control](#permissions--access-control)
+    - [Permissions \& Access Control](#permissions--access-control)
     - [Change Management](#change-management)
       - [Versioning strategy](#versioning-strategy)
       - [Release management](#release-management)
-  - [Infrastructure & Deployment](#infrastructure--deployment)
-    - [Stateful](#stateful)
+  - [Infrastructure \& Deployment](#infrastructure--deployment)
     - [Stateless](#stateless)
     - [CDK Commands](#cdk-commands)
     - [Stacks](#stacks)
@@ -23,9 +22,9 @@ Variant Monitoring Service
     - [Setup](#setup)
       - [Requirements](#requirements)
       - [Install Dependencies](#install-dependencies)
-    - [Linting & Formatting](#linting--formatting)
+    - [Linting \& Formatting](#linting--formatting)
     - [Testing](#testing)
-  - [Glossary & References](#glossary--references)
+  - [Glossary \& References](#glossary--references)
 
 
 Service Description
@@ -113,10 +112,6 @@ Infrastructure & Deployment
 
 Infrastructure is managed via CDK. The `deployMode` context variable selects the entry point.
 
-### Stateful
-
-This service has no stateful resources. The `StatefulStack` is kept as a placeholder for future use.
-
 ### Stateless
 
 - **`ExtractVariantAfFunction`** — Python 3.12 ARM64 Lambda (1 GB memory, 2 GB ephemeral storage, 5 min timeout). Bundled via `PythonLayerVersion` from `app/requirements.txt`. Entrypoint: `variant_monitoring/lambdas/extract_variant_af.py::lambda_handler`.
@@ -133,7 +128,6 @@ This service has no stateful resources. The `StatefulStack` is kept as a placeho
 ### CDK Commands
 
 - **`cdk-stateless`**: Deploys stacks containing stateless resources (Lambda, EventBridge rules).
-- **`cdk-stateful`**: Deploys stacks containing stateful resources (not currently used).
 
 All deployments go through the `DeploymentStackPipeline` construct, which handles cross-account role assumptions and applies the correct per-environment configuration from `config.ts`.
 
@@ -142,7 +136,9 @@ All deployments go through the `DeploymentStackPipeline` construct, which handle
 pnpm cdk-stateless deploy -e OrcaBusStatelessVariantMonitoringStack
 
 # Manually deploy directly to the beta (dev) environment (bypasses the pipeline)
-AWS_PROFILE=umccr-dev-pu pnpm cdk -c deployMode=direct deploy VariantMonitoringStack
+AWS_PROFILE=umccr-dev-pu pnpm cdk-stateless deploy \
+  OrcaBusStatelessVariantMonitoringStack/DeploymentPipeline/OrcaBusBeta/VariantMonitoringStack \
+  --require-approval never -e
 ```
 
 ### Stacks
@@ -186,7 +182,6 @@ Development
 │   │   └── deployment-stack.ts       # Runtime resource definitions
 │   └── toolchain/
 │       ├── stateless-stack.ts        # CodePipeline setup
-│       └── stateful-stack.ts         # Placeholder (no stateful resources)
 └── test/                             # CDK infrastructure tests (cdk-nag)
 ```
 

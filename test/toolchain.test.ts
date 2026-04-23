@@ -38,7 +38,3 @@ describe('cdk-nag-stateless-toolchain-stack', () => {
     expect(warnings).toHaveLength(0);
   });
 });
-
-// TODO: Add cdk-nag-stateful-toolchain-stack tests once the StatefulStack
-// is implemented with a real stack class (replace the TODO placeholders in
-// infrastructure/toolchain/stateful-stack.ts).

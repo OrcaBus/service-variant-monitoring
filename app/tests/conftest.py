@@ -70,8 +70,8 @@ def sample_wrsc_event():
                 'data': {
                     'tags': {
                         'libraryId': 'L2600148',
-                        'subjectId': 'SBJ00027',
-                        'individualId': 'NA12878',
+                        'subjectId': 'NA12878',
+                        'individualId': 'SBJ00027',
                     },
                     'engineParameters': {
                         'outputUri': 's3://test-cache-bucket/byob-icav2/development/analysis/dragen-wgts-dna/20260312abcd1234/',
